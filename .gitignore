@@ -1,0 +1,22 @@
+# data: raw is immutable and lives in the bucket; never commit it
+data/
+*.jpg
+!tests/fixtures/**/*.jpg
+
+# env / secrets
+.env
+
+# python / tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# model weights
+*.pt
+*.onnx
+
+# macOS
+.DS_Store

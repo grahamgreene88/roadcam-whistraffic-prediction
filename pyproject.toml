@@ -1,0 +1,53 @@
+[project]
+name = "whistler-traffic"
+version = "0.1.0"
+description = "Day-ahead congestion prediction for Highway 99 (Sea-to-Sky), northbound mornings"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "httpx>=0.28",
+    "tenacity>=9.0",
+]
+
+[dependency-groups]
+logger = [
+    "metpx-sr3>=3.0",
+    "boto3>=1.35",  # Cloudflare R2 via plain S3 API; endpoint/credentials from env
+]
+parse = [
+    "lxml>=5.3",
+    "beautifulsoup4>=4.12",
+    "pandas>=2.2",
+    "pyarrow>=17",
+]
+ml = [
+    "torch>=2.5",
+    "torchvision>=0.20",
+    "opencv-python-headless>=4.10",
+    "scikit-learn>=1.5",
+    "lightgbm>=4.5",
+    # detector library added once the licence question is settled
+]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "ipykernel>=6.29",
+    "jupyterlab>=4.3",
+]
+
+[tool.uv]
+default-groups = ["dev", "parse"]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.13"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DTZ"]  # DTZ flags naive datetimes (UTC rule)
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
