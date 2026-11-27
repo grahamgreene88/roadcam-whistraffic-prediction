@@ -1,0 +1,28 @@
+[Unit]
+Description=Sea-to-Sky webcam logger
+Wants=network-online.target
+After=network-online.target
+# Never give up restarting
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=whistler
+Group=whistler
+EnvironmentFile=/etc/whistler-traffic/.env
+WorkingDirectory=/opt/whistler-traffic
+ExecStart=/opt/whistler-traffic/.venv/bin/python -m whistler_traffic.logger.webcams
+Restart=always
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+# DATA_DIR in .env must be /var/lib/whistler-traffic (systemd creates it, owned by whistler)
+StateDirectory=whistler-traffic
+StateDirectoryMode=0750
+# Hardening: read-only system, writable only in the state directory
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

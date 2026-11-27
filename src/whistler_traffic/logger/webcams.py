@@ -9,6 +9,7 @@ import json
 import logging
 import time
 from collections import Counter
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -31,17 +32,24 @@ def load_cameras(path: Path) -> list[tuple[str, str]]:
         return [(r["id"].strip(), r["links_imageURL"].strip()) for r in csv.DictReader(f)]
 
 
-def _last_modified_age(headers: httpx.Headers, fetched_at) -> float | None:
+def image_mtime(headers: httpx.Headers) -> datetime | None:
+    """When the server wrote the image. DriveBC (nginx) sends no Last-Modified, but its
+    ETag is "<mtime hex>-<size hex>". Note: capture time (image overlay) is ~2 min earlier."""
     value = headers.get("last-modified")
-    if not value:
-        return None
-    try:
-        lm = parsedate_to_datetime(value)
-    except (TypeError, ValueError):
-        return None
-    if lm.tzinfo is None:
-        return None
-    return (fetched_at - lm).total_seconds()
+    if value:
+        try:
+            lm = parsedate_to_datetime(value)
+            if lm.tzinfo is not None:
+                return lm
+        except (TypeError, ValueError):
+            pass
+    mtime_hex, sep, _ = headers.get("etag", "").removeprefix("W/").strip('"').partition("-")
+    if sep:
+        try:
+            return datetime.fromtimestamp(int(mtime_hex, 16), UTC)
+        except (ValueError, OverflowError, OSError):
+            pass
+    return None
 
 
 def fetch_camera(client, cam_id, url, last_hash, buffer) -> tuple[dict, str | None]:
@@ -53,11 +61,13 @@ def fetch_camera(client, cam_id, url, last_hash, buffer) -> tuple[dict, str | No
         rec.update(result="fetch_error", error=repr(exc))
         return rec, None
 
-    age = _last_modified_age(resp.headers, fetched_at)
+    mtime = image_mtime(resp.headers)
+    age = (fetched_at - mtime).total_seconds() if mtime else None
     rec.update(
         status=resp.status_code,
         headers=dict(resp.headers),
-        last_modified_age_s=age,
+        image_mtime=iso_utc(mtime) if mtime else None,
+        image_age_s=age,
         stale=age is not None and age > STALE_AFTER_SECONDS,
         bytes=len(resp.content),
     )

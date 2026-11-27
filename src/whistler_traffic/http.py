@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 
 def user_agent(contact_email: str) -> str:
-    return f"whistler-traffic/{__version__} (non-commercial UBC research; contact {contact_email})"
+    return f"whistler-traffic/{__version__} (UBC student project; contact {contact_email})"
 
 
 def make_client(contact_email: str, timeout: float = 20.0, **kwargs) -> httpx.Client:

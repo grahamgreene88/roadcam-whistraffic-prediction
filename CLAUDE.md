@@ -53,7 +53,9 @@ ML project to tell skiers when traffic builds on Highway 99 (Vancouver → Whist
 
 Run in the cloud, not on a laptop. Expected volume: about 4,700 unique images a day, roughly 35 GB a season.
 
-1. **Webcams:** read `sea_to_sky_cameras.csv`; poll every 5 minutes (cameras update about every 15 minutes, unsynchronised); skip an image whose hash matches that camera's previous image; save raw JPEG as `{camera_id}/{UTC timestamp}.jpg`; record response headers (especially `Last-Modified`) in a metadata log; log failed or stale fetches and continue.
+1. **Webcams:** read `config/sea_to_sky_cameras.csv`; poll every 5 minutes (cameras update unsynchronised, every 5–15 minutes; see note below); skip an image whose hash matches that camera's previous image; save raw JPEG as `{camera_id}/{UTC timestamp}.jpg`; record response headers in a metadata log; log failed or stale fetches and continue.
+   - **Image time:** DriveBC sends no `Last-Modified`. Its nginx `ETag` is `"<mtime hex>-<size hex>"`, the file write time, which the logger decodes as `image_mtime`. The capture time printed on the image is about 2 minutes earlier.
+   - **Update interval (observed 26 Nov 2026):** Vancouver cameras 17, 18, 19 published a new image every 5 minutes; rural camera 689's image was about 14 minutes old. Measure per-camera intervals from the metadata log after the first day. If most cameras update every 5 minutes, volume is about 14,000 images a day (roughly 105 GB a season), not 4,700, and a 5-minute poll will miss some images.
 2. **ECCC forecasts:** subscribe via AMQP to new citypage files for the three site codes (English XML); save every issued file unchanged.
 3. **Snow report:** once a day, early morning; save raw HTML; parse overnight, 24 h and 48 h snowfall, base depth, lifts and terrain open into CSV. If the page loads its data from a separate endpoint, report the path before using it, and check it against robots.txt.
 4. **All sources:** User-Agent identifying the project with a contact email; a daily heartbeat that alerts if any source has gone quiet for several hours. Test the alert by stopping a logger deliberately.
